@@ -4,14 +4,12 @@ import (
 	"fmt"
 )
 
-func canIDrink(age int) bool {
-	if koreanAge := age + 2; koreanAge < 20 {
-		return false
-	}
-
-	return true
-}
-
 func main() {
-	fmt.Println(canIDrink(18))
+	names_slice := []string{"kim", "park", "choi"}
+	addr := &names_slice[0]
+	fmt.Println(names_slice[0], ":", addr)
+
+	names_slice = append(names_slice, "chang")
+	addr = &names_slice[0]
+	fmt.Println(names_slice[0], ":", addr)
 }
