@@ -1,15 +1,19 @@
 package main
 
-import (
-	"fmt"
-)
+import "fmt"
+
+type person struct {
+	name    string
+	age     int
+	favFood []string
+}
 
 func main() {
-	names_slice := []string{"kim", "park", "choi"}
-	addr := &names_slice[0]
-	fmt.Println(names_slice[0], ":", addr)
+	favFood1 := []string{"chicken", "pizza", "hamburger"}
+	kim := person{"kim", 20, favFood1}
+	fmt.Println(kim)
 
-	names_slice = append(names_slice, "chang")
-	addr = &names_slice[0]
-	fmt.Println(names_slice[0], ":", addr)
+	favFood2 := []string{"kimchi", "namul"}
+	choi := person{name: "choi", favFood: favFood2}
+	fmt.Println(choi)
 }
