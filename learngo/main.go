@@ -1,19 +1,21 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"log"
 
-type person struct {
-	name    string
-	age     int
-	favFood []string
-}
+	"github.com/usrname/learngo/accounts"
+)
 
 func main() {
-	favFood1 := []string{"chicken", "pizza", "hamburger"}
-	kim := person{"kim", 20, favFood1}
-	fmt.Println(kim)
+	account := accounts.NewAccount("kim")
+	account.Deposit(10)
+	fmt.Println(account.Balance())
 
-	favFood2 := []string{"kimchi", "namul"}
-	choi := person{name: "choi", favFood: favFood2}
-	fmt.Println(choi)
+	err := account.Withdraw(20)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	fmt.Println(account.Balance())
 }
