@@ -1,54 +1,54 @@
 package main
 
 import (
-	"errors"
 	"fmt"
+	"log"
 	"net/http"
+	"strconv"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
-type requestResult struct {
-	url    string
-	status string
-}
-
-var errRequestFailed = errors.New("Request failed")
+var baseURL string = "https://kr.indeed.com/%EC%B7%A8%EC%97%85?q=python&limit=50"
 
 func main() {
-	results := make(map[string]string)
-	c := make(chan requestResult)
-	urls := []string{
-		"https://www.airbnb.com/",
-		"https://www.google.com/",
-		"https://www.amazon.com/",
-		"https://www.reddit.com/",
-		"https://www.google.com/",
-		"https://soundcloud.com/",
-		"https://www.facebook.com/",
-		"https://www.instagram.com/",
-		"https://academy.nomadcoders.co/",
-	}
+	totalPages := getPages()
 
-	for _, url := range urls {
-		go hitURL(url, c)
-	}
-
-	for i := 0; i < len(urls); i++ {
-		result := <-c
-		results[result.url] = result.status
-	}
-
-	for url, status := range results {
-		fmt.Println(url, status)
+	for i := 0; i < totalPages; i++ {
+		getPage(i)
 	}
 }
 
-func hitURL(url string, c chan<- requestResult) {
-	resp, err := http.Get(url)
+func getPage(page int) {
+	pageUrl := baseURL + "&start=" + strconv.Itoa(page*50)
+	fmt.Println("Requesting", pageUrl)
+}
 
-	status := "OK"
-	if err != nil || resp.StatusCode >= 400 {
-		status = "FAIL"
+func getPages() int {
+	pages := 0
+	res, err := http.Get(baseURL)
+	checkErr(err)
+	checkCode(res)
+
+	defer res.Body.Close()
+
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	checkErr(err)
+
+	doc.Find(".pagination").Each(func(i int, s *goquery.Selection) {
+		pages = s.Find("a").Length()
+	})
+
+	return pages
+}
+
+func checkErr(err error) {
+	if err != nil {
+		log.Fatalln(err)
 	}
-
-	c <- requestResult{url: url, status: status}
+}
+func checkCode(res *http.Response) {
+	if res.StatusCode != 200 {
+		log.Fatalln("Request failed with status:", res.StatusCode)
+	}
 }
