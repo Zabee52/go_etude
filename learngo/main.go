@@ -24,11 +24,15 @@ type extractedJob struct {
 
 func main() {
 	var jobs []extractedJob
+	c := make(chan []extractedJob)
 	totalPages := getPages()
 
 	for i := 0; i < totalPages; i++ {
-		extractedJobs := getPage(i)
-		jobs = append(jobs, extractedJobs...)
+		go getPage(i, c)
+	}
+
+	for i := 0; i < totalPages; i++ {
+		jobs = append(jobs, <-c...)
 	}
 
 	writeJobs(jobs)
@@ -47,15 +51,24 @@ func writeJobs(jobs []extractedJob) {
 	wErr := w.Write(headers)
 	checkErr(wErr)
 
+	c := make(chan []string)
 	for _, job := range jobs {
-		jobSlice := []string{"https://kr.indeed.com/jobs?q=python&l&vjk=" + job.id, job.title, job.location, job.salary, job.summary}
-		jwErr := w.Write(jobSlice)
+		go sliceJob(job, c)
+	}
+
+	for i := 0; i < len(jobs); i++ {
+		jwErr := w.Write(<-c)
 		checkErr(jwErr)
 	}
 }
 
-func getPage(page int) []extractedJob {
+func sliceJob(job extractedJob, c chan<- []string) {
+	c <- []string{"https://kr.indeed.com/jobs?q=python&l&vjk=" + job.id, job.title, job.location, job.salary, job.summary}
+}
+
+func getPage(page int, mainC chan<- []extractedJob) {
 	var jobs []extractedJob
+	c := make(chan extractedJob)
 	pageUrl := baseURL + "&start=" + strconv.Itoa(page*50)
 	fmt.Println("Requesting", pageUrl)
 	res, err := http.Get(baseURL)
@@ -70,20 +83,23 @@ func getPage(page int) []extractedJob {
 	searchCards := doc.Find(".tapItem")
 
 	searchCards.Each(func(i int, card *goquery.Selection) {
-		job := extractJob(card)
-		jobs = append(jobs, job)
+		go extractJob(card, c)
 	})
 
-	return jobs
+	for i := 0; i < searchCards.Length(); i++ {
+		jobs = append(jobs, <-c)
+	}
+
+	mainC <- jobs
 }
 
-func extractJob(card *goquery.Selection) extractedJob {
+func extractJob(card *goquery.Selection, c chan<- extractedJob) {
 	id, _ := card.Attr("data-jk")
 	title := cleanString(card.Find("h2>span").Text())
 	location := cleanString(card.Find(".companyLocation").Text())
 	salary := cleanString(card.Find(".salaryText").Text())
 	summary := cleanString(card.Find(".summary").Text())
-	return extractedJob{
+	c <- extractedJob{
 		id:       id,
 		title:    title,
 		location: location,
