@@ -2,20 +2,22 @@ package main
 
 import (
 	"fmt"
-	"log"
-
-	"github.com/usrname/learngo/accounts"
+	"time"
 )
 
 func main() {
-	account := accounts.NewAccount("kim")
-	account.Deposit(10)
-	fmt.Println(account.Balance())
-
-	err := account.Withdraw(20)
-	if err != nil {
-		log.Fatalln(err)
+	c := make(chan string)
+	people := [2]string{"kim", "choi"}
+	for _, person := range people {
+		go isSexy(person, c)
 	}
 
-	fmt.Println(account.Balance())
+	for i := 0; i < len(people); i++ {
+		fmt.Println(<-c)
+	}
+}
+
+func isSexy(person string, c chan string) {
+	time.Sleep(time.Second * 5)
+	c <- person + " is sexy"
 }
